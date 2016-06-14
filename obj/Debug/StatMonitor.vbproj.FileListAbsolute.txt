@@ -1,0 +1,15 @@
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Debug\StatMonitor.exe.config
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Debug\StatMonitor.exe
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Debug\StatMonitor.pdb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Debug\StatMonitor.xml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\MainWindow.baml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\MainWindow.g.vb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\Application.g.vb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor_MarkupCompile.cache
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.g.resources
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.Resources.resources
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.vbproj.GenerateResource.Cache
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.exe
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.xml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.pdb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Debug\StatMonitor.vbprojResolveAssemblyReference.cache

@@ -1,0 +1,3 @@
+﻿Class MovieInfo
+
+End Class

@@ -1,0 +1,15 @@
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Release\StatMonitor.exe.config
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Release\StatMonitor.exe
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Release\StatMonitor.pdb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\bin\Release\StatMonitor.xml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\MainWindow.baml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\MainWindow.g.vb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\Application.g.vb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor_MarkupCompile.cache
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.g.resources
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.Resources.resources
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.vbproj.GenerateResource.Cache
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.exe
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.xml
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.pdb
+C:\Users\Jumar\Desktop\testwidget\StatMonitor\obj\Release\StatMonitor.vbprojResolveAssemblyReference.cache
