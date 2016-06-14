@@ -6,6 +6,12 @@ StatMonitor
 </name>
 </assembly>
 <members>
+<member name="M:StatMonitor.PerformanceInfo.getCPUUsage">
+ <summary>
+ Gets CPU Usage in %
+ </summary>
+ <returns></returns>
+</member>
 <member name="T:StatMonitor.Application">
 <summary>
 Application
@@ -30,12 +36,6 @@ MainWindow
 <summary>
 InitializeComponent
 </summary>
-</member>
-<member name="M:StatMonitor.PerformanceInfo.getCPUUsage">
- <summary>
- Gets CPU Usage in %
- </summary>
- <returns></returns>
 </member>
 <member name="T:StatMonitor.My.MyWpfExtension">
  <summary>

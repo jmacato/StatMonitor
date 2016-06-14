@@ -58,12 +58,37 @@ Class MainWindow
         End If
     End Function
 
+
+
+
+    Private Shared Function GetNotifTrayHandle() As IntPtr
+        Dim hWndTray As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
+        If hWndTray <> IntPtr.Zero Then
+            hWndTray = FindWindowEx(hWndTray, IntPtr.Zero, "TrayNotifyWnd", Nothing)
+            Return hWndTray
+        End If
+
+        Return IntPtr.Zero
+    End Function
+
+    Private Shared Function GetAppTrayHandle() As IntPtr
+        Dim hWndTray As IntPtr = FindWindow("MSTaskSwWClass", Nothing)
+        If hWndTray <> IntPtr.Zero Then
+            hWndTray = FindWindowEx(hWndTray, IntPtr.Zero, "MSTaskListWClass", Nothing)
+            Return hWndTray
+        End If
+
+        Return IntPtr.Zero
+    End Function
+
+
+
+    Dim desktopWorkingArea = SystemParameters.WorkArea
+
     Public Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
 
-        Me.Height = SystemParameters.PrimaryScreenHeight - SystemParameters.WorkArea.Bottom
-        Dim desktopWorkingArea = SystemParameters.WorkArea
-        Me.Left = desktopWorkingArea.Right - Me.Width - 250
-        Me.Top = desktopWorkingArea.Bottom ' - Me.Height
+
+
 
         AddHandler NetworkMonitor_Thread.DoWork, AddressOf NetworkMonitor_DoWork
         AddHandler WindowSetter.DoWork, AddressOf WindowSetter_DoWork
@@ -80,6 +105,13 @@ Class MainWindow
         NetworkMonitor_Thread.RunWorkerAsync()
 
 
+        '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
+        Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
+        exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
+        SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
+        ugh = SetTopMostWindow(Mein.Handle, 1)
+
+
     End Sub
 
 
@@ -94,14 +126,15 @@ Class MainWindow
                     New Action(
                     Sub()
 
+
                         Dim phav As Int64 = PerformanceInfo.GetPhysicalAvailableMemoryInMiB()
                         Dim tot As Int64 = PerformanceInfo.GetTotalMemoryInMiB()
                         Dim percentFree As Decimal = (CDec(phav) / CDec(tot)) * 100
                         Dim percentOccupied As Decimal = 100 - percentFree
 
                         tx1.Text = "CPU " + PerformanceInfo.getCPUUsage().ToString + "%" + " • MEM " +
-                        phav.ToString +
-                        "MB/" + tot.ToString + "MB " +
+                        Int(tot * (percentOccupied / 100)).ToString +
+                        "MB/" + CDec(tot).ToString + "MB " +
                         "(" + Int(percentOccupied).ToString + "%)"
                     End Sub))
             System.Threading.Thread.Sleep(750)
@@ -109,18 +142,81 @@ Class MainWindow
 
     End Sub
 
+    Dim Mein As New WindowInteropHelper(Me)
+    Dim ugh As Long = 0
+
     Private Sub WindowSetter_DoWork(sender As Object, e As DoWorkEventArgs)
         Do
             Dispatcher.Invoke(
                     DispatcherPriority.Loaded,
                     New Action(
                     Sub()
-                        Dim Mein As Long = (New WindowInteropHelper(Me)).Handle
-                        Dim ugh As Long = SetTopMostWindow(Mein, 1)
+
+                        'Get TrayNotifW sizes for reference
+
+                        Dim Taskbar_RECT As RECT
+                        ugh = GetWindowRect(GetNotifTrayHandle(), Taskbar_RECT)
+
+                        'WPF been using Device Independent Pixels, hence the clusterfuck here
+
+                        Dim Left_Offset = (Taskbar_RECT.Right - Taskbar_RECT.Left)
+                        Me.Height = PixelsToPoints(Taskbar_RECT.Bottom - Taskbar_RECT.Top, Axis.Vertical)
+                        Me.Left = PixelsToPoints(Taskbar_RECT.Right - PointsToPixels(Me.Width, Axis.Horizontal) - Left_Offset, Axis.Horizontal)
+                        Me.Top = PixelsToPoints(Taskbar_RECT.Top, Axis.Vertical)
+
+                        RemoveFromAeroPeek(Mein.Handle)
+
+                        ugh = SetWindowPos(Mein.Handle, HWND_TOPMOST, 0, 0, 0, 0, FLAGS)
+
+                        'Try
+                        '    ' Dim hWnd As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
+                        '    Dim isVisible = IsWindowVisible(FindWindow("Shell_TrayWnd", Nothing))
+                        '    'Debug.Print(isVisible.ToString)
+                        '    If Not isVisible Then
+                        '        ugh = SetWindowPos(Mein.Handle, HWND_NOTOPMOST, 0, 0, 0, 0, FLAGS)
+                        '        'Debug.Print(ugh.ToString)
+                        '    Else
+                        '        ugh = SetWindowPos(Mein.Handle, HWND_TOPMOST, 0, 0, 0, 0, FLAGS)
+
+                        '    End If
+                        'Catch ex As Exception
+                        '    Debug.Print(ex.ToString)
+                        'End Try
+
                     End Sub))
-            Thread.Sleep(150)
+
+
+
+
+            Thread.Sleep(100)
         Loop
     End Sub
+
+
+    Private Function PointsToPixels(wpfPoints As Double, direction As Axis) As Double
+        If direction = Axis.Horizontal Then
+            Return wpfPoints * Screen.PrimaryScreen.WorkingArea.Width / SystemParameters.WorkArea.Width
+        Else
+            Return wpfPoints * Screen.PrimaryScreen.WorkingArea.Height / SystemParameters.WorkArea.Height
+        End If
+    End Function
+
+    Private Function PixelsToPoints(pixels As Integer, direction As Axis) As Double
+        If direction = Axis.Horizontal Then
+            Return pixels * SystemParameters.WorkArea.Width / Screen.PrimaryScreen.WorkingArea.Width
+        Else
+            Return pixels * SystemParameters.WorkArea.Height / Screen.PrimaryScreen.WorkingArea.Height
+        End If
+    End Function
+
+    Public Enum Axis
+        Vertical
+        ' |
+        Horizontal
+        ' ——
+    End Enum
+
+
 
     Dim NICi As Integer = 0
 
@@ -131,7 +227,7 @@ Class MainWindow
                     DispatcherPriority.Loaded,
                     New Action(
                     Sub()
-                        tx2.Text = (String.Format("▼ {0} Kb/s ▲ {1} Kb/s ", Math.Round(bytesReceived(NICi).NextValue / 1024, 2, MidpointRounding.ToEven),
+                        tx2.Text = (String.Format("▼ {0} kB/s ▲ {1} kB/s ", Math.Round(bytesReceived(NICi).NextValue / 1024, 2, MidpointRounding.ToEven),
                                                                     Math.Round(bytesSent(NICi).NextValue / 1024, 2, MidpointRounding.ToEven)))
                     End Sub))
             System.Threading.Thread.Sleep(1000)
@@ -140,148 +236,6 @@ Class MainWindow
 
     End Sub
 
-
-#Region "Animations"
-
-    Sub MetroFadeSlide(ByVal elem As UIElement, Optional Delay As Double = 0, Optional SpeedRatio As Double = 1)
-        Dim str As Storyboard = Me.FindResource("MetroFadeSlide")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.SetSpeedRatio(SpeedRatio)
-        Dim tra As New TranslateTransform
-
-        tra.X = 0
-        tra.Y = 0
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeSlideOutFast(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeSlideOutFast")
-        Dim tra As New TranslateTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.X = 0
-        tra.Y = 0
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeSlideFast(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeSlideFast")
-        Dim tra As New TranslateTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.X = 0
-        tra.Y = 0
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeSlideOut(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeSlideOut")
-        Dim tra As New TranslateTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.X = 0
-        tra.Y = 0
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeZoom(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeZoom")
-        Dim tra As New ScaleTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.ScaleX = 1
-        tra.ScaleY = 1
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeZoom2(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeZoom2")
-        Dim tra As New ScaleTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.ScaleX = 1
-        tra.ScaleY = 1
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeZoomOut(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeZoomOut")
-        Dim tra As New ScaleTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.ScaleX = 1
-        tra.ScaleY = 1
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeZoomOut2a(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeZoomOut2a")
-        Dim tra As New ScaleTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.ScaleX = 1
-        tra.ScaleY = 1
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-
-    Sub MetroFade(ByVal elem As UIElement, Optional Delay As Double = 0, Optional SpeedRatio As Double = 1)
-        Dim str As Storyboard = Me.FindResource("MetroFade")
-        str.SetSpeedRatio(SpeedRatio)
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFade2(ByVal elem As UIElement, Optional Delay As Double = 0, Optional SpeedRatio As Double = 1)
-        Dim str As Storyboard = Me.FindResource("MetroFade2")
-        str.SetSpeedRatio(SpeedRatio)
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-    Sub MetroFadeOut(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = Me.FindResource("MetroFadeOut")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-
-    Sub MM_MetroHoverIn(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = StatMonitor.FindResource("MM_MetroHoverIn")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-    Sub MM_MetroHoverOut(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = StatMonitor.FindResource("MM_MetroHoverOut")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-    Sub MM_MetroFadeZoom(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = StatMonitor.FindResource("MM_MetroFadeZoom")
-        Dim tra As New ScaleTransform
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        tra.ScaleX = 1
-        tra.ScaleY = 1
-        elem.RenderTransform = tra
-        str.Begin(elem)
-    End Sub
-
-    Sub MM_MetroButtonUp(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = StatMonitor.FindResource("MM_MetroButtonUp")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-    Sub MM_MetroButtonDown(ByVal elem As UIElement, Optional Delay As Double = 0)
-        Dim str As Storyboard = StatMonitor.FindResource("MM_MetroButtonDown")
-        str.BeginTime = TimeSpan.FromSeconds(Delay)
-        str.Begin(elem)
-    End Sub
-
-#End Region
 
 #Region "Closing Time"
 
@@ -310,67 +264,5 @@ Class MainWindow
     End Sub
 
 #End Region
-
-End Class
-
-
-Public Class PerformanceInfo
-    Private Sub New()
-    End Sub
-    <DllImport("psapi.dll", SetLastError:=True)>
-    Public Shared Function GetPerformanceInfo(<Out> ByRef PerformanceInformation As PerformanceInformation, <[In]> Size As Integer) As <MarshalAs(UnmanagedType.Bool)> Boolean
-    End Function
-
-    <StructLayout(LayoutKind.Sequential)>
-    Public Structure PerformanceInformation
-        Public Size As Integer
-        Public CommitTotal As IntPtr
-        Public CommitLimit As IntPtr
-        Public CommitPeak As IntPtr
-        Public PhysicalTotal As IntPtr
-        Public PhysicalAvailable As IntPtr
-        Public SystemCache As IntPtr
-        Public KernelTotal As IntPtr
-        Public KernelPaged As IntPtr
-        Public KernelNonPaged As IntPtr
-        Public PageSize As IntPtr
-        Public HandlesCount As Integer
-        Public ProcessCount As Integer
-        Public ThreadCount As Integer
-    End Structure
-
-
-    ''' <summary>
-    ''' Gets CPU Usage in %
-    ''' </summary>
-    ''' <returns></returns>
-    Public Shared Function getCPUUsage() As Double
-        Dim processor As New ManagementObject("Win32_PerfFormattedData_PerfOS_Processor.Name='_Total'")
-        processor.[Get]()
-
-        Return Double.Parse(processor.Properties("PercentProcessorTime").Value.ToString())
-    End Function
-
-
-
-    Public Shared Function GetPhysicalAvailableMemoryInMiB() As Int64
-        Dim pi As New PerformanceInformation()
-        If GetPerformanceInfo(pi, Marshal.SizeOf(pi)) Then
-            Return Convert.ToInt64((pi.PhysicalAvailable.ToInt64() * pi.PageSize.ToInt64() / 1048576))
-        Else
-            Return -1
-        End If
-
-    End Function
-
-    Public Shared Function GetTotalMemoryInMiB() As Int64
-        Dim pi As New PerformanceInformation()
-        If GetPerformanceInfo(pi, Marshal.SizeOf(pi)) Then
-            Return Convert.ToInt64((pi.PhysicalTotal.ToInt64() * pi.PageSize.ToInt64() / 1048576))
-        Else
-            Return -1
-        End If
-
-    End Function
 
 End Class
