@@ -72,7 +72,7 @@ Class MainWindow
     End Function
 
     Private Shared Function GetAppTrayHandle() As IntPtr
-        Dim hWndTray As IntPtr = FindWindow("MSTaskSwWClass", Nothing)
+        Dim hWndTray As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
         If hWndTray <> IntPtr.Zero Then
             hWndTray = FindWindowEx(hWndTray, IntPtr.Zero, "MSTaskListWClass", Nothing)
             Return hWndTray
@@ -110,6 +110,12 @@ Class MainWindow
         exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
         SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
         ugh = SetTopMostWindow(Mein.Handle, 1)
+
+        'Dim hostHandle As IntPtr = hostProcess.MainWindowHandle
+        'Dim guestHandle As IntPtr = Me.Handle
+        ' SetWindowLong(Mein.Handle, GWL_STYLE, CInt(GetWindowLong(Mein.Handle, GWL_STYLE)) Or WS_CHILD)
+        'ugh = SetParent(Mein.Handle, FindWindow("Shell_TrayWnd", Nothing))
+        'ugh = SetTopMostWindow(Mein.Handle, 1)
 
 
     End Sub
@@ -170,13 +176,14 @@ Class MainWindow
 
                         'Try
                         '    ' Dim hWnd As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
-                        '    Dim isVisible = IsWindowVisible(FindWindow("Shell_TrayWnd", Nothing))
+                        '    Dim isVisible = IsWindowVisible(GetNotifTrayHandle)
                         '    'Debug.Print(isVisible.ToString)
                         '    If Not isVisible Then
-                        '        ugh = SetWindowPos(Mein.Handle, HWND_NOTOPMOST, 0, 0, 0, 0, FLAGS)
+
+                        '        Me.Visibility = Visibility.Collapsed
                         '        'Debug.Print(ugh.ToString)
                         '    Else
-                        '        ugh = SetWindowPos(Mein.Handle, HWND_TOPMOST, 0, 0, 0, 0, FLAGS)
+                        '        Me.Visibility = Visibility.Visible
 
                         '    End If
                         'Catch ex As Exception
@@ -184,9 +191,6 @@ Class MainWindow
                         'End Try
 
                     End Sub))
-
-
-
 
             Thread.Sleep(100)
         Loop

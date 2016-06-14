@@ -151,14 +151,13 @@ Public Module Win32_API
     Public Sub SetLastError(dwErrorCode As Integer)
     End Sub
 
-    '=======================================================
-    'Service provided by Telerik (www.telerik.com)
-    'Conversion powered by NRefactory.
-    'Twitter: @telerik
-    'Facebook: facebook.com/telerik
-    '=======================================================
 
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Function SetParent(hWndChild As IntPtr, hWndNewParent As IntPtr) As IntPtr
+    End Function
 
+    Public GWL_STYLE As Integer = -16
+        Public WS_CHILD As Integer = &H40000000
 
 End Module
 
@@ -200,7 +199,6 @@ Public Class PerformanceInfo
 
         Return Double.Parse(processor.Properties("PercentProcessorTime").Value.ToString())
     End Function
-
 
 
     Public Shared Function GetPhysicalAvailableMemoryInMiB() As Int64
