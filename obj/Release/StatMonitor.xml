@@ -6,6 +6,83 @@ StatMonitor
 </name>
 </assembly>
 <members>
+<member name="T:StatMonitor.SysInfo.CpuUsage">
+ <summary>
+ Defines an abstract base class for implementations of CPU usage counters.
+ </summary>
+</member>
+<member name="M:StatMonitor.SysInfo.CpuUsage.Create">
+ <summary>
+ Creates and returns a CpuUsage instance that can be used to query the CPU time on this operating system.
+ </summary>
+ <returns>An instance of the CpuUsage class.</returns>
+ <exception cref="T:System.NotSupportedException">This platform is not supported -or- initialization of the CPUUsage object failed.</exception>
+</member>
+<member name="M:StatMonitor.SysInfo.CpuUsage.Query">
+ <summary>
+ Determines the current average CPU load.
+ </summary>
+ <returns>An integer that holds the CPU load percentage.</returns>
+ <exception cref="T:System.NotSupportedException">One of the system calls fails. The CPU time can not be obtained.</exception>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsage.m_CpuUsage">
+ <summary>
+ Holds an instance of the CPUUsage class.
+ </summary>
+</member>
+<member name="T:StatMonitor.SysInfo.CpuUsageNt">
+ <summary>
+ Inherits the CPUUsage class and implements the Query method for Windows NT systems.
+ </summary>
+ <remarks>
+ <p>This class works on Windows NT4, Windows 2000, Windows XP, Windows .NET Server and higher.</p>
+ <p>You should not use this class directly in your code. Use the CPUUsage.Create() method to instantiate a CPUUsage object.</p>
+ </remarks>
+</member>
+<member name="M:StatMonitor.SysInfo.CpuUsageNt.#ctor">
+ <summary>
+ Initializes a new CpuUsageNt instance.
+ </summary>
+ <exception cref="T:System.NotSupportedException">One of the system calls fails.</exception>
+</member>
+<member name="M:StatMonitor.SysInfo.CpuUsageNt.Query">
+ <summary>
+ Determines the current average CPU load.
+ </summary>
+ <returns>An integer that holds the CPU load percentage.</returns>
+ <exception cref="T:System.NotSupportedException">One of the system calls fails. The CPU time can not be obtained.</exception>
+</member>
+<member name="M:StatMonitor.SysInfo.CpuUsageNt.NtQuerySystemInformation(System.Int32,System.Byte[],System.Int32,System.IntPtr)">
+ <summary>
+ NtQuerySystemInformation is an internal Windows function that retrieves various kinds of system information.
+ </summary>
+ <param name="dwInfoType">One of the values enumerated in SYSTEM_INFORMATION_CLASS, indicating the kind of system information to be retrieved.</param>
+ <param name="lpStructure">Points to a buffer where the requested information is to be returned. The size and structure of this information varies depending on the value of the SystemInformationClass parameter.</param>
+ <param name="dwSize">Length of the buffer pointed to by the SystemInformation parameter.</param>
+ <param name="returnLength">Optional pointer to a location where the function writes the actual size of the information requested.</param>
+ <returns>Returns a success NTSTATUS if successful, and an NTSTATUS error code otherwise.</returns>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.SYSTEM_BASICINFORMATION">
+ <summary>Returns the number of processors in the system in a SYSTEM_BASIC_INFORMATION structure.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.SYSTEM_PERFORMANCEINFORMATION">
+ <summary>Returns an opaque SYSTEM_PERFORMANCE_INFORMATION structure.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.SYSTEM_TIMEINFORMATION">
+ <summary>Returns an opaque SYSTEM_TIMEOFDAY_INFORMATION structure.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.NO_ERROR">
+ <summary>The value returned by NtQuerySystemInformation is no error occurred.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.oldIdleTime">
+ <summary>Holds the old idle time.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.oldSystemTime">
+ <summary>Holds the old system time.</summary>
+</member>
+<member name="F:StatMonitor.SysInfo.CpuUsageNt.processorCount">
+ <summary>Holds the number of processors in the system.</summary>
+</member>
 <member name="T:StatMonitor.Application">
 <summary>
 Application
@@ -30,12 +107,6 @@ MainWindow
 <summary>
 InitializeComponent
 </summary>
-</member>
-<member name="M:StatMonitor.PerformanceInfo.getCPUUsage">
- <summary>
- Gets CPU Usage in %
- </summary>
- <returns></returns>
 </member>
 <member name="T:StatMonitor.My.MyWpfExtension">
  <summary>

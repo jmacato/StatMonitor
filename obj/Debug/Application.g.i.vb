@@ -41,15 +41,27 @@ Imports System.Windows.Shell
 Partial Public Class Application
     Inherits System.Windows.Application
     
+    Private _contentLoaded As Boolean
+    
     '''<summary>
     '''InitializeComponent
     '''</summary>
     <System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
      System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")>  _
     Public Sub InitializeComponent()
+        If _contentLoaded Then
+            Return
+        End If
+        _contentLoaded = true
         
         #ExternalSource("..\..\Application.xaml",5)
         Me.StartupUri = New System.Uri("MainWindow.xaml", System.UriKind.Relative)
+        
+        #End ExternalSource
+        Dim resourceLocater As System.Uri = New System.Uri("/StatMonitor;component/application.xaml", System.UriKind.Relative)
+        
+        #ExternalSource("..\..\Application.xaml",1)
+        System.Windows.Application.LoadComponent(Me, resourceLocater)
         
         #End ExternalSource
     End Sub

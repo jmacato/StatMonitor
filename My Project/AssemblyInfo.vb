@@ -12,10 +12,10 @@ Imports System.Windows
 ' Review the values of the assembly attributes
 
 <Assembly: AssemblyTitle("StatMonitor")>
-<Assembly: AssemblyDescription("")>
+<Assembly: AssemblyDescription("Status Monitoring Deskband")>
 <Assembly: AssemblyCompany("")>
 <Assembly: AssemblyProduct("StatMonitor")>
-<Assembly: AssemblyCopyright("Copyright © JAM 2016")>
+<Assembly: AssemblyCopyright("Copyright © J. Macato / R. Tomista 2016")>
 <Assembly: AssemblyTrademark("")>
 <Assembly: ComVisible(false)>
 
@@ -55,5 +55,6 @@ Imports System.Windows
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("1.0.0.0")>
+<Assembly: AssemblyVersion("0.9.0.0")>
 <Assembly: AssemblyFileVersion("1.0.0.0")>
+<Assembly: NeutralResourcesLanguage("en")>

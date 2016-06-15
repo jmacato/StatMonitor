@@ -221,9 +221,6 @@ Public Module Win32_API
     Public Sub SetLastError(dwErrorCode As Integer)
     End Sub
 
-
-
-
     <DllImport("user32.dll", SetLastError:=True)>
     Public Function SetParent(hWndChild As IntPtr, hWndNewParent As IntPtr) As IntPtr
     End Function
@@ -257,12 +254,13 @@ Public Module Win32_API
     Friend Function GetMonitorInfoEx(hMonitor As IntPtr, ByRef lpmi As MonitorInfoEx) As Boolean
     End Function
 
+    <DllImport("user32.dll", SetLastError:=True)>
+    Public Function GetActiveWindow() As IntPtr
+    End Function
 
 
 
 End Module
-
-
 
 Public Class PerformanceInfo
     Public Sub New()
@@ -289,19 +287,6 @@ Public Class PerformanceInfo
         Public ThreadCount As Integer
     End Structure
 
-
-    ''' <summary>
-    ''' Gets CPU Usage in %
-    ''' </summary>
-    ''' <returns></returns>
-    Public Shared Function getCPUUsage() As Double
-        Dim processor As New ManagementObject("Win32_PerfFormattedData_PerfOS_Processor.Name='_Total'")
-        processor.[Get]()
-
-        Return Double.Parse(processor.Properties("PercentProcessorTime").Value.ToString())
-    End Function
-
-
     Public Shared Function GetPhysicalAvailableMemoryInMiB() As Int64
         Dim pi As New PerformanceInformation()
         If GetPerformanceInfo(pi, Marshal.SizeOf(pi)) Then
@@ -320,6 +305,156 @@ Public Class PerformanceInfo
             Return -1
         End If
 
+    End Function
+
+End Class
+
+
+Public Class SysInfo
+#Region "CpuUsage"
+    ''' <summary>
+    ''' Defines an abstract base class for implementations of CPU usage counters.
+    ''' </summary>
+    Public MustInherit Class CpuUsage
+        ''' <summary>
+        ''' Creates and returns a CpuUsage instance that can be used to query the CPU time on this operating system.
+        ''' </summary>
+        ''' <returns>An instance of the CpuUsage class.</returns>
+        ''' <exception cref="NotSupportedException">This platform is not supported -or- initialization of the CPUUsage object failed.</exception>
+        Public Shared Function Create() As CpuUsage
+            If m_CpuUsage Is Nothing Then
+                If Environment.OSVersion.Platform = PlatformID.Win32NT Then
+                    m_CpuUsage = New CpuUsageNt()
+                Else
+                    Throw New NotSupportedException()
+                End If
+            End If
+            Return m_CpuUsage
+        End Function
+        ''' <summary>
+        ''' Determines the current average CPU load.
+        ''' </summary>
+        ''' <returns>An integer that holds the CPU load percentage.</returns>
+        ''' <exception cref="NotSupportedException">One of the system calls fails. The CPU time can not be obtained.</exception>
+        Public MustOverride Function Query() As Integer
+        ''' <summary>
+        ''' Holds an instance of the CPUUsage class.
+        ''' </summary>
+        Private Shared m_CpuUsage As CpuUsage = Nothing
+    End Class
+
+
+    ''' <summary>
+    ''' Inherits the CPUUsage class and implements the Query method for Windows NT systems.
+    ''' </summary>
+    ''' <remarks>
+    ''' <p>This class works on Windows NT4, Windows 2000, Windows XP, Windows .NET Server and higher.</p>
+    ''' <p>You should not use this class directly in your code. Use the CPUUsage.Create() method to instantiate a CPUUsage object.</p>
+    ''' </remarks>
+    Friend NotInheritable Class CpuUsageNt
+        Inherits CpuUsage
+        ''' <summary>
+        ''' Initializes a new CpuUsageNt instance.
+        ''' </summary>
+        ''' <exception cref="NotSupportedException">One of the system calls fails.</exception>
+        Public Sub New()
+            Dim timeInfo As Byte() = New Byte(31) {}
+            ' SYSTEM_TIME_INFORMATION structure
+            Dim perfInfo As Byte() = New Byte(311) {}
+            ' SYSTEM_PERFORMANCE_INFORMATION structure
+            Dim baseInfo As Byte() = New Byte(43) {}
+            ' SYSTEM_BASIC_INFORMATION structure
+            Dim ret As Integer
+            ' get new system time
+            ret = NtQuerySystemInformation(SYSTEM_TIMEINFORMATION, timeInfo, timeInfo.Length, IntPtr.Zero)
+            If ret <> NO_ERROR Then
+                Throw New NotSupportedException()
+            End If
+            ' get new CPU's idle time
+            ret = NtQuerySystemInformation(SYSTEM_PERFORMANCEINFORMATION, perfInfo, perfInfo.Length, IntPtr.Zero)
+            If ret <> NO_ERROR Then
+                Throw New NotSupportedException()
+            End If
+            ' get number of processors in the system
+            ret = NtQuerySystemInformation(SYSTEM_BASICINFORMATION, baseInfo, baseInfo.Length, IntPtr.Zero)
+            If ret <> NO_ERROR Then
+                Throw New NotSupportedException()
+            End If
+            ' store new CPU's idle and system time and number of processors
+            oldIdleTime = BitConverter.ToInt64(perfInfo, 0)
+            ' SYSTEM_PERFORMANCE_INFORMATION.liIdleTime
+            oldSystemTime = BitConverter.ToInt64(timeInfo, 8)
+            ' SYSTEM_TIME_INFORMATION.liKeSystemTime
+            processorCount = baseInfo(40)
+        End Sub
+        ''' <summary>
+        ''' Determines the current average CPU load.
+        ''' </summary>
+        ''' <returns>An integer that holds the CPU load percentage.</returns>
+        ''' <exception cref="NotSupportedException">One of the system calls fails. The CPU time can not be obtained.</exception>
+        Public Overrides Function Query() As Integer
+            Dim timeInfo As Byte() = New Byte(31) {}
+            ' SYSTEM_TIME_INFORMATION structure
+            Dim perfInfo As Byte() = New Byte(311) {}
+            ' SYSTEM_PERFORMANCE_INFORMATION structure
+            Dim dbIdleTime As Double, dbSystemTime As Double
+            Dim ret As Integer
+            ' get new system time
+            ret = NtQuerySystemInformation(SYSTEM_TIMEINFORMATION, timeInfo, timeInfo.Length, IntPtr.Zero)
+            If ret <> NO_ERROR Then
+                Throw New NotSupportedException()
+            End If
+            ' get new CPU's idle time
+            ret = NtQuerySystemInformation(SYSTEM_PERFORMANCEINFORMATION, perfInfo, perfInfo.Length, IntPtr.Zero)
+            If ret <> NO_ERROR Then
+                Throw New NotSupportedException()
+            End If
+            ' CurrentValue = NewValue - OldValue
+            dbIdleTime = BitConverter.ToInt64(perfInfo, 0) - oldIdleTime
+            dbSystemTime = BitConverter.ToInt64(timeInfo, 8) - oldSystemTime
+            ' CurrentCpuIdle = IdleTime / SystemTime
+            If dbSystemTime <> 0 Then
+                dbIdleTime = dbIdleTime / dbSystemTime
+            End If
+            ' CurrentCpuUsage% = 100 - (CurrentCpuIdle * 100) / NumberOfProcessors
+            dbIdleTime = 100.0 - dbIdleTime * 100.0 / processorCount + 0.5
+            ' store new CPU's idle and system time
+            oldIdleTime = BitConverter.ToInt64(perfInfo, 0)
+            ' SYSTEM_PERFORMANCE_INFORMATION.liIdleTime
+            oldSystemTime = BitConverter.ToInt64(timeInfo, 8)
+            ' SYSTEM_TIME_INFORMATION.liKeSystemTime
+            Return CInt(dbIdleTime)
+        End Function
+        ''' <summary>
+        ''' NtQuerySystemInformation is an internal Windows function that retrieves various kinds of system information.
+        ''' </summary>
+        ''' <param name="dwInfoType">One of the values enumerated in SYSTEM_INFORMATION_CLASS, indicating the kind of system information to be retrieved.</param>
+        ''' <param name="lpStructure">Points to a buffer where the requested information is to be returned. The size and structure of this information varies depending on the value of the SystemInformationClass parameter.</param>
+        ''' <param name="dwSize">Length of the buffer pointed to by the SystemInformation parameter.</param>
+        ''' <param name="returnLength">Optional pointer to a location where the function writes the actual size of the information requested.</param>
+        ''' <returns>Returns a success NTSTATUS if successful, and an NTSTATUS error code otherwise.</returns>
+        <DllImport("ntdll", EntryPoint:="NtQuerySystemInformation")>
+        Private Shared Function NtQuerySystemInformation(dwInfoType As Integer, lpStructure As Byte(), dwSize As Integer, returnLength As IntPtr) As Integer
+        End Function
+        ''' <summary>Returns the number of processors in the system in a SYSTEM_BASIC_INFORMATION structure.</summary>
+        Private Const SYSTEM_BASICINFORMATION As Integer = 0
+        ''' <summary>Returns an opaque SYSTEM_PERFORMANCE_INFORMATION structure.</summary>
+        Private Const SYSTEM_PERFORMANCEINFORMATION As Integer = 2
+        ''' <summary>Returns an opaque SYSTEM_TIMEOFDAY_INFORMATION structure.</summary>
+        Private Const SYSTEM_TIMEINFORMATION As Integer = 3
+        ''' <summary>The value returned by NtQuerySystemInformation is no error occurred.</summary>
+        Private Const NO_ERROR As Integer = 0
+        ''' <summary>Holds the old idle time.</summary>
+        Private oldIdleTime As Long
+        ''' <summary>Holds the old system time.</summary>
+        Private oldSystemTime As Long
+        ''' <summary>Holds the number of processors in the system.</summary>
+        Private processorCount As Double
+    End Class
+#End Region
+
+    Public Shared Function GetCpuUsage() As Integer
+        Return CpuUsage.Create().Query()
     End Function
 
 End Class

@@ -12,7 +12,6 @@ Class MainWindow
 
     Public Delegate Function EnumWindowsProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
 
-
     Dim DispLoaded As DispatcherPriority = DispatcherPriority.Loaded
     Dim H_OFFSET As UInt16 = 215
     Dim W_OFFSET As UInt16 = 600 * 2
@@ -37,22 +36,25 @@ Class MainWindow
     Dim bytesSent(nics.Length - 1) As System.Diagnostics.PerformanceCounter
     Dim bytesReceived(nics.Length - 1) As System.Diagnostics.PerformanceCounter
 
-
     Dim Mein As New WindowInteropHelper(Me)
     Dim ugh As Long = 0
-
+    Dim NICi As Integer = 0
 
 #End Region
 
-    Public Function SetTopMostWindow(hwnd As Long, Topmost As Boolean) _
-     As Long
+    Public Function SetTopMostWindow(hwnd As Long, Topmost As Boolean) As Long
         If Topmost = True Then 'Make the window topmost
-            SetTopMostWindow = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0,
-             0, FLAGS)
+            SetTopMostWindow = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, FLAGS)
+
         Else
-            SetTopMostWindow = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0,
-             0, 0, FLAGS)
-            SetTopMostWindow = False
+            SetTopMostWindow = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, FLAGS)
+
+            'SetTopMostWindow = SetWindowPos(hwnd, 1,
+            '                                PointsToPixels(Me.Left, Axis.Horizontal),
+            '                                PointsToPixels(Me.Top, Axis.Vertical),
+            '                                PointsToPixels(Me.Width, Axis.Vertical),
+            '                                PointsToPixels(Me.Height, Axis.Horizontal),
+            '                                FLAGS)
         End If
     End Function
 
@@ -60,16 +62,6 @@ Class MainWindow
         Dim hWndTray As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
         If hWndTray <> IntPtr.Zero Then
             hWndTray = FindWindowEx(hWndTray, IntPtr.Zero, "TrayNotifyWnd", Nothing)
-            Return hWndTray
-        End If
-
-        Return IntPtr.Zero
-    End Function
-
-    Private Shared Function GetAppTrayHandle() As IntPtr
-        Dim hWndTray As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
-        If hWndTray <> IntPtr.Zero Then
-            hWndTray = FindWindowEx(hWndTray, IntPtr.Zero, "MSTaskListWClass", Nothing)
             Return hWndTray
         End If
 
@@ -121,8 +113,7 @@ Class MainWindow
         Return fullScreen
     End Function
 
-    Dim desktopWorkingArea = SystemParameters.WorkArea
-    Dim isOtherAppFull As Boolean = False
+
     Public Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
 
         AddHandler NetworkMonitor_Thread.DoWork, AddressOf NetworkMonitor_DoWork
@@ -146,7 +137,6 @@ Class MainWindow
     End Sub
 
 
-
     Private Sub CPUMEMMonitor_DoWork(sender As Object, e As DoWorkEventArgs)
         Do
             Dispatcher.Invoke(
@@ -159,7 +149,7 @@ Class MainWindow
                 Dim tot As Int64 = PerformanceInfo.GetTotalMemoryInMiB()
                 Dim percentFree As Decimal = (CDec(phav) / CDec(tot)) * 100
                 Dim percentOccupied As Decimal = 100 - percentFree
-                Dim cpuUsage As Decimal = PerformanceInfo.getCPUUsage()
+                Dim cpuUsage As Decimal = SysInfo.GetCpuUsage
                 tx1.Inlines.Add(New Run("CPU"))
                 Dim CPUColoredText As Run = New Run(" " + cpuUsage.ToString + "%")
                 CPUColoredText.Foreground = ColorPercent(100 - Int(cpuUsage))
@@ -182,6 +172,11 @@ Class MainWindow
 
     Public Function ColorPercent(ByVal percent As Integer) As SolidColorBrush
         If ActiveColoring Then
+            If percent < 0 Then
+                percent = 0
+            ElseIf percent > 99 Then
+                percent = 99
+            End If
             Return New SolidColorBrush(Color.FromArgb(&HFF, levelColorArrayR(percent), levelColorArrayG(percent), 0))
         Else
             Return Brushes.White
@@ -224,15 +219,15 @@ Class MainWindow
              New Action(
              Sub()
                  If fll > 1 Then
-                     Me.Visibility = Visibility.Collapsed
+                     ' Me.Visibility = Visibility.Collapsed
                      ugh = SetTopMostWindow(Mein.Handle, 0)
 
                  Else
-                     Me.Visibility = Visibility.Visible
+                     'Me.Visibility = Visibility.Visible
                      ugh = SetTopMostWindow(Mein.Handle, 1)
                  End If
              End Sub))
-            Thread.Sleep(10)
+            Thread.Sleep(1000)
         Loop
     End Sub
 
@@ -258,10 +253,6 @@ Class MainWindow
         Horizontal
         ' ——
     End Enum
-
-
-
-    Dim NICi As Integer = 0
 
     Private Sub NetworkMonitor_DoWork(sender As Object, e As DoWorkEventArgs)
         Do

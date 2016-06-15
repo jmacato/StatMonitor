@@ -28,3 +28,5 @@ C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\StatMonitor_MarkupCompile.ca
 C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\StatMonitor.g.resources
 C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\StatMonitor.Resources.resources
 C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\StatMonitor.vbproj.GenerateResource.Cache
+C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\StatMonitor_MarkupCompile.lref
+C:\Users\Jumar\Source\Repos\StatMonitor\obj\Release\Application.baml
