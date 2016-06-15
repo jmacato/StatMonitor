@@ -1,21 +1,16 @@
-﻿Imports System.Threading
-Imports System.ComponentModel
+﻿Imports System.ComponentModel
+Imports System.Runtime.InteropServices
+Imports System.Text
+Imports System.Threading
+Imports System.Windows.Forms
 Imports System.Windows.Interop
 Imports System.Windows.Threading
-Imports System.Windows.Media.Animation
-Imports System.Net.NetworkInformation
-Imports System
-Imports System.Management
-Imports System.Windows.Forms
-Imports System.Runtime.InteropServices
-Imports System.Collections.Generic
-Imports System.Linq
-Imports System.Text
-
 
 Class MainWindow
 
 #Region "Declarations"
+    Public Delegate Function EnumWindowsProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
+
 
     Dim DispLoaded As DispatcherPriority = DispatcherPriority.Loaded
     Dim H_OFFSET As UInt16 = 215
@@ -82,18 +77,61 @@ Class MainWindow
     End Function
 
 
+    Public Shared Function FindWindows() As IEnumerable(Of IntPtr)
+        Dim found As IntPtr = IntPtr.Zero
+        Dim windows As New List(Of IntPtr)()
+
+        EnumWindows(Function(wnd As IntPtr, param As IntPtr)
+                        windows.Add(wnd)
+                        Return True
+                    End Function, IntPtr.Zero)
+
+        Return windows
+    End Function
+
+
+
+    Shared Function CheckIfFullScreen(hWnd As IntPtr) As Boolean
+        Const MONITOR_DEFAULTTOPRIMARY As Integer = 1
+        Dim mi = New MonitorInfoEx()
+        mi.cbSize = Marshal.SizeOf(mi)
+        GetMonitorInfoEx(MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY), mi)
+        Dim fullScreen As Boolean = False
+        Dim appBounds As RECT
+        GetWindowRect(hWnd, appBounds)
+        Dim size As Integer = GetWindowTextLength(hWnd)
+        If System.Math.Max(System.Threading.Interlocked.Increment(size), size - 1) > 0 AndAlso IsWindowVisible(hWnd) Then
+            Dim sb = New StringBuilder(size)
+            GetWindowText(hWnd, sb, size)
+
+            If sb.Length > 20 Then
+                sb.Remove(20, sb.Length - 20)
+            End If
+
+            If sb.Length < 1 Then
+                Return False
+                Exit Function
+            End If
+
+            Dim windowHeight As Integer = appBounds.Right - appBounds.Left
+            Dim windowWidth As Integer = appBounds.Bottom - appBounds.Top
+
+            Dim monitorHeight As Integer = mi.rcMonitor.Right - mi.rcMonitor.Left
+            Dim monitorWidth As Integer = mi.rcMonitor.Bottom - mi.rcMonitor.Top
+
+            fullScreen = (windowHeight = monitorHeight) AndAlso (windowWidth = monitorWidth)
+        End If
+        Return fullScreen
+    End Function
+
 
     Dim desktopWorkingArea = SystemParameters.WorkArea
-
+    Dim isOtherAppFull As Boolean = False
     Public Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
-
-
-
 
         AddHandler NetworkMonitor_Thread.DoWork, AddressOf NetworkMonitor_DoWork
         AddHandler WindowSetter.DoWork, AddressOf WindowSetter_DoWork
         AddHandler CPUMEMMonitor.DoWork, AddressOf CPUMEMMonitor_DoWork
-
 
         For NICi = 0 To nics.Length - 1
             bytesSent(NICi) = New System.Diagnostics.PerformanceCounter("Network Interface", "Bytes Sent/sec", nics(NICi), True)
@@ -103,20 +141,6 @@ Class MainWindow
         WindowSetter.RunWorkerAsync()
         CPUMEMMonitor.RunWorkerAsync()
         NetworkMonitor_Thread.RunWorkerAsync()
-
-
-        '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
-        Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
-        exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
-        SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
-        ugh = SetTopMostWindow(Mein.Handle, 1)
-
-        'Dim hostHandle As IntPtr = hostProcess.MainWindowHandle
-        'Dim guestHandle As IntPtr = Me.Handle
-        ' SetWindowLong(Mein.Handle, GWL_STYLE, CInt(GetWindowLong(Mein.Handle, GWL_STYLE)) Or WS_CHILD)
-        'ugh = SetParent(Mein.Handle, FindWindow("Shell_TrayWnd", Nothing))
-        'ugh = SetTopMostWindow(Mein.Handle, 1)
-
 
     End Sub
 
@@ -172,30 +196,39 @@ Class MainWindow
 
                         RemoveFromAeroPeek(Mein.Handle)
 
-                        ugh = SetWindowPos(Mein.Handle, HWND_TOPMOST, 0, 0, 0, 0, FLAGS)
+                        '' After a night-fckin long search
+                        '' I can finally hide this mofo when other apps are fullscreen >.>
 
-                        'Try
-                        '    ' Dim hWnd As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
-                        '    Dim isVisible = IsWindowVisible(GetNotifTrayHandle)
-                        '    'Debug.Print(isVisible.ToString)
-                        '    If Not isVisible Then
+                        Dim AvailWinds As IEnumerable(Of IntPtr) = FindWindows()
+                        Dim windowName As New List(Of String)()
+                        Dim strbuild As New StringBuilder()
+                        Dim fll As Integer = 0
+                        Dim asdsad As Boolean
 
-                        '        Me.Visibility = Visibility.Collapsed
-                        '        'Debug.Print(ugh.ToString)
-                        '    Else
-                        '        Me.Visibility = Visibility.Visible
+                        For Each X As IntPtr In AvailWinds
+                            asdsad = CheckIfFullScreen(X)
+                            fll += Math.Abs(CInt(asdsad))
+                        Next
 
-                        '    End If
-                        'Catch ex As Exception
-                        '    Debug.Print(ex.ToString)
-                        'End Try
+                        If fll > 1 Then
+                            Me.Visibility = Visibility.Collapsed
+                        Else
+                            Me.Visibility = Visibility.Visible
+                        End If
+
+                        '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
+                        Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
+                        exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
+                        SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
+                        ugh = SetTopMostWindow(Mein.Handle, 1)
+
+
 
                     End Sub))
 
-            Thread.Sleep(100)
+            Thread.Sleep(10)
         Loop
     End Sub
-
 
     Private Function PointsToPixels(wpfPoints As Double, direction As Axis) As Double
         If direction = Axis.Horizontal Then

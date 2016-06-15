@@ -135,6 +135,19 @@ Public Module Win32_API
         Return result
     End Function
 
+
+    <DllImport("user32.dll", CharSet:=CharSet.Unicode)>
+    Public Function EnumWindows(enumProc As MainWindow.EnumWindowsProc, lParam As IntPtr) As Boolean
+    End Function
+
+    Public Function GetNextWindow(ByVal hWnd As IntPtr, ByVal uCmd As UInt32) As IntPtr
+        Return GetWindow(hWnd, uCmd)
+    End Function
+
+    <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Auto)>
+    Public Function GetWindow(ByVal hWnd As IntPtr, ByVal uCmd As UInt32) As IntPtr
+    End Function
+
     <DllImport("user32.dll", EntryPoint:="SetWindowLongPtr", SetLastError:=True)>
     Public Function IntSetWindowLongPtr(hWnd As IntPtr, nIndex As Integer, dwNewLong As IntPtr) As IntPtr
     End Function
@@ -152,12 +165,43 @@ Public Module Win32_API
     End Sub
 
 
+
+
     <DllImport("user32.dll", SetLastError:=True)>
     Public Function SetParent(hWndChild As IntPtr, hWndNewParent As IntPtr) As IntPtr
     End Function
 
     Public GWL_STYLE As Integer = -16
         Public WS_CHILD As Integer = &H40000000
+
+    <StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
+    Friend Structure MonitorInfoEx
+        Public cbSize As Integer
+        Public rcMonitor As RECT
+        Public rcWork As RECT
+        Public dwFlags As UInt32
+        <MarshalAs(UnmanagedType.ByValTStr, SizeConst:=32)>
+        Public szDeviceName As String
+    End Structure
+
+    <DllImport("user32.dll", CharSet:=CharSet.Unicode)>
+    Public Function GetWindowText(hWnd As IntPtr, strText As StringBuilder, maxCount As Integer) As Integer
+    End Function
+
+    <DllImport("user32.dll", CharSet:=CharSet.Unicode)>
+    Public Function GetWindowTextLength(hWnd As IntPtr) As Integer
+    End Function
+
+    <DllImport("User32")>
+    Public Function MonitorFromWindow(hWnd As IntPtr, dwFlags As Integer) As IntPtr
+    End Function
+
+    <DllImport("user32", EntryPoint:="GetMonitorInfo", CharSet:=CharSet.Auto, SetLastError:=True)>
+    Friend Function GetMonitorInfoEx(hMonitor As IntPtr, ByRef lpmi As MonitorInfoEx) As Boolean
+    End Function
+
+
+
 
 End Module
 
@@ -222,3 +266,5 @@ Public Class PerformanceInfo
     End Function
 
 End Class
+
+
