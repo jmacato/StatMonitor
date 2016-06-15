@@ -32,7 +32,7 @@ Please email the Main Author at _(ztsort-zentech02@yahoo.com)_ for details on ou
 ## Authors
 
 * **Jumar Macato** - Implementation / Maintainer - @[jmacato](https://github.com/jmacato)
-* **Rain Tomista** - Original Concept/Feature Testing - @[raintomista](https://github.com/raintomista)
+* **Rain Tomista** - Original Concept / Feature Testing - @[raintomista](https://github.com/raintomista)
 
 
 ## License
