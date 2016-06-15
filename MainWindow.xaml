@@ -2,7 +2,7 @@
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:awe="http://schemas.awesomium.com/winfx" x:Name="StatMonitor" x:Class="MainWindow"
-	Title="MainWindow" Height="40px" Width="242.4" Loaded="Window_Loaded" FontFamily="Segoe WP" 
+	Title="MainWindow" Height="40px" Width="230.684" Loaded="Window_Loaded" FontFamily="Segoe WP" 
 	WindowStartupLocation="Manual" ResizeMode="NoResize" WindowStyle="None" 
 	Foreground="White" AllowsTransparency="True" Background="#00FFFFFF" ShowInTaskbar="False"
 	WindowState="Normal" ShowActivated="False" IsTabStop="False" Topmost="True">
@@ -248,17 +248,6 @@
             </Storyboard>
 
             <Storyboard x:Key="MM_MetroHoverIn">
-                <!--
-                <ThicknessAnimationUsingKeyFrames Storyboard.TargetProperty="Padding" BeginTime="00:00:00">
-                    <EasingThicknessKeyFrame KeyTime="0" Value="0, 0, 0, 10" />
-                    <EasingThicknessKeyFrame KeyTime="00:00:0.3" Value="0, 0, 0, 0" >
-                        <EasingThicknessKeyFrame.EasingFunction>
-                            <CubicEase EasingMode="EaseOut"/>
-                        </EasingThicknessKeyFrame.EasingFunction>
-                    </EasingThicknessKeyFrame>
-               
-                </ThicknessAnimationUsingKeyFrames>
-                -->
                 <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(TextBlock.FontSize)">
                     <EasingDoubleKeyFrame KeyTime="0" Value="45"/>
                     <EasingDoubleKeyFrame KeyTime="0:0:0.6" Value="30">
@@ -278,17 +267,7 @@
             </Storyboard>
 
             <Storyboard x:Key="MM_MetroHoverOut">
-                <!--
-                <ThicknessAnimationUsingKeyFrames Storyboard.TargetProperty="Padding" BeginTime="00:00:00">
-                    <EasingThicknessKeyFrame KeyTime="0" Value="0, 0, 0, 0" />
-                    <EasingThicknessKeyFrame KeyTime="00:00:0.4" Value="0, 0, 0, 10" >
-                        <EasingThicknessKeyFrame.EasingFunction>
-                            <CubicEase EasingMode="EaseOut"/>
-                        </EasingThicknessKeyFrame.EasingFunction>
-                    </EasingThicknessKeyFrame>
-                </ThicknessAnimationUsingKeyFrames>
-                -->
-                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(TextBlock.FontSize)">
+                 <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(TextBlock.FontSize)">
                     <EasingDoubleKeyFrame KeyTime="0" Value="30"/>
                     <EasingDoubleKeyFrame KeyTime="0:0:0.6" Value="45">
                         <EasingDoubleKeyFrame.EasingFunction>

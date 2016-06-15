@@ -27,12 +27,6 @@ Class MainWindow
     Public Const HWND_TOPMOST = -1
     Public Const HWND_NOTOPMOST = -2
 
-
-    Dim A_WID As Long = 48
-    Dim A_HEI As Long = 150
-    Dim asd As Long = My.Computer.Screen.WorkingArea.Width - A_WID
-    Dim asc As Long = My.Computer.Screen.WorkingArea.Height - A_HEI
-
     Private m_PerformanceCounter As New System.Diagnostics.PerformanceCounter("Processor", "% Processor Time", "_Total")
 
     Dim networkInterfaces As New System.Diagnostics.PerformanceCounterCategory("Network Interface")
@@ -52,9 +46,6 @@ Class MainWindow
             SetTopMostWindow = False
         End If
     End Function
-
-
-
 
     Private Shared Function GetNotifTrayHandle() As IntPtr
         Dim hWndTray As IntPtr = FindWindow("Shell_TrayWnd", Nothing)
@@ -76,7 +67,6 @@ Class MainWindow
         Return IntPtr.Zero
     End Function
 
-
     Public Shared Function FindWindows() As IEnumerable(Of IntPtr)
         Dim found As IntPtr = IntPtr.Zero
         Dim windows As New List(Of IntPtr)()
@@ -88,8 +78,6 @@ Class MainWindow
 
         Return windows
     End Function
-
-
 
     Shared Function CheckIfFullScreen(hWnd As IntPtr) As Boolean
         Const MONITOR_DEFAULTTOPRIMARY As Integer = 1
@@ -124,7 +112,6 @@ Class MainWindow
         Return fullScreen
     End Function
 
-
     Dim desktopWorkingArea = SystemParameters.WorkArea
     Dim isOtherAppFull As Boolean = False
     Public Sub Window_Loaded(sender As Object, e As RoutedEventArgs)
@@ -142,10 +129,13 @@ Class MainWindow
         CPUMEMMonitor.RunWorkerAsync()
         NetworkMonitor_Thread.RunWorkerAsync()
 
+        Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
+        exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
+        SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
+        ugh = SetTopMostWindow(Mein.Handle, 1)
+
     End Sub
 
-
-    Dim MemUsi As New Microsoft.VisualBasic.Devices.ComputerInfo()
 
 
     Private Sub CPUMEMMonitor_DoWork(sender As Object, e As DoWorkEventArgs)
@@ -171,27 +161,27 @@ Class MainWindow
 
                         tx1.Inlines.Add(New Bold(CPUColoredText))
 
-                        tx1.Inlines.Add((New Run(" • MEM ")))
+                        tx1.Inlines.Add((New Run(" • RAM ")))
 
 
-                        Dim MemoryColoredText As Run = New Run(Int(tot * (percentOccupied / 100)).ToString)
+                        Dim MemoryColoredText As Run = New Run(Int(tot * (percentOccupied / 100)).ToString + "MB ")
                         MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
                         tx1.Inlines.Add(New Bold(MemoryColoredText))
 
                         'tx1.Inlines.Add(New Bold(New Run("MB/" + CDec(tot).ToString + "MB ")))
 
-                        tx1.Inlines.Add(New Bold(New Run(" MB/")))
+                        'tx1.Inlines.Add(New Bold(New Run("MB")))
 
-                        Dim MemoryColoredText2 As Run = New Run(CDec(tot).ToString)
-                        MemoryColoredText2.Foreground = ColorPercent(100)
-                        tx1.Inlines.Add(New Bold(MemoryColoredText2))
+                        'Dim MemoryColoredText2 As Run = New Run(CDec(tot).ToString)
+                        'MemoryColoredText2.Foreground = ColorPercent(100)
+                        'tx1.Inlines.Add(New Bold(MemoryColoredText2))
 
-                        tx1.Inlines.Add(New Bold(New Run(" MB ")))
+                        'tx1.Inlines.Add(New Bold(New Run(" MB ")))
 
 
                         Dim MemoryColoredText3 As Run = New Run("(" + Int(percentOccupied).ToString + "%)")
                         MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
-                        tx1.Inlines.Add(MemoryColoredText3)
+                        tx1.Inlines.Add(New Bold(MemoryColoredText3))
 
                     End Sub))
             System.Threading.Thread.Sleep(750)
@@ -208,57 +198,51 @@ Class MainWindow
 
     Private Sub WindowSetter_DoWork(sender As Object, e As DoWorkEventArgs)
         Do
-            Dispatcher.Invoke(
-                    DispatcherPriority.Loaded,
-                    New Action(
-                    Sub()
+            'Try
 
-                        'Get TrayNotifW sizes for reference
+            'Get TrayNotifW sizes for reference
 
-                        Dim Taskbar_RECT As RECT
-                        ugh = GetWindowRect(GetNotifTrayHandle(), Taskbar_RECT)
+            Dim Taskbar_RECT As RECT
+                ugh = GetWindowRect(GetNotifTrayHandle(), Taskbar_RECT)
 
-                        'WPF been using Device Independent Pixels, hence the clusterfuck here
+            'WPF been using Device Independent Pixels, hence the clusterfuck here
 
-                        Dim Left_Offset = (Taskbar_RECT.Right - Taskbar_RECT.Left)
-                        Me.Height = PixelsToPoints(Taskbar_RECT.Bottom - Taskbar_RECT.Top, Axis.Vertical)
-                        Me.Left = PixelsToPoints(Taskbar_RECT.Right - PointsToPixels(Me.Width, Axis.Horizontal) - Left_Offset, Axis.Horizontal)
-                        Me.Top = PixelsToPoints(Taskbar_RECT.Top, Axis.Vertical)
-
-                        RemoveFromAeroPeek(Mein.Handle)
-
-                        '' After a night-fckin long search
-                        '' I can finally hide this mofo when other apps are fullscreen >.>
-
-                        Dim AvailWinds As IEnumerable(Of IntPtr) = FindWindows()
-                        Dim windowName As New List(Of String)()
-                        Dim strbuild As New StringBuilder()
-                        Dim fll As Integer = 0
-                        Dim asdsad As Boolean
-
-                        For Each X As IntPtr In AvailWinds
-                            asdsad = CheckIfFullScreen(X)
-                            fll += Math.Abs(CInt(asdsad))
-                        Next
-
-                        If fll > 1 Then
-                            Me.Visibility = Visibility.Collapsed
-                        Else
-                            Me.Visibility = Visibility.Visible
-                        End If
-
-                        '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
-                        Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
-                        exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
-                        SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
-                        ugh = SetTopMostWindow(Mein.Handle, 1)
+            '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
 
 
+            Dim Left_Offset = (Taskbar_RECT.Right - Taskbar_RECT.Left)
+                Me.Height = PixelsToPoints(Taskbar_RECT.Bottom - Taskbar_RECT.Top, Axis.Vertical)
+                Me.Left = PixelsToPoints(Taskbar_RECT.Right - PointsToPixels(Me.Width, Axis.Horizontal) - Left_Offset, Axis.Horizontal)
+                Me.Top = PixelsToPoints(Taskbar_RECT.Top, Axis.Vertical)
 
-                    End Sub))
+                RemoveFromAeroPeek(Mein.Handle)
 
-            Thread.Sleep(10)
+                '' After a night-fckin long search
+                '' I can finally hide this mofo when other apps are fullscreen >.>
+
+                Dim AvailWinds As IEnumerable(Of IntPtr) = FindWindows()
+                Dim windowName As New List(Of String)()
+                Dim strbuild As New StringBuilder()
+                Dim fll As Integer = 0
+                Dim asdsad As Boolean
+
+                For Each X As IntPtr In AvailWinds
+                    asdsad = CheckIfFullScreen(X)
+                    fll += Math.Abs(CInt(asdsad))
+                Next
+
+                If fll > 1 Then
+                    Me.Visibility = Visibility.Collapsed
+                Else
+                    Me.Visibility = Visibility.Visible
+                End If
+            ' Catch ex As Exception
+            ' Debug.Print(ex.ToString)
+            'End Try
+            Thread.Sleep(100)
+
         Loop
+
     End Sub
 
     Private Function PointsToPixels(wpfPoints As Double, direction As Axis) As Double

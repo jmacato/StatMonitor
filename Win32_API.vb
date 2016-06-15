@@ -39,6 +39,39 @@ Public Module Win32_API
                                          255, 255, 255, 255, 255, 255, 255, 255, 255,
                                          255, 255, 255, 255, 255, 255}
 
+
+
+    Private Structure DWM_COLORIZATION_PARAMS
+        Public clrColor As UInteger
+        Public clrAfterGlow As UInteger
+        Public nIntensity As UInteger
+        Public clrAfterGlowBalance As UInteger
+        Public clrBlurBalance As UInteger
+        Public clrGlassReflectionIntensity As UInteger
+        Public fOpaque As Boolean
+    End Structure
+
+
+    <DllImport("dwmapi.dll", EntryPoint:="#127", PreserveSig:=False)>
+    Public Sub DwmGetColorizationParameters(ByRef parameters As DWM_COLORIZATION_PARAMS)
+    End Sub
+
+    Public Sub getParameters()
+        Dim temp As New DWM_COLORIZATION_PARAMS()
+        DwmGetColorizationParameters(temp)
+        Dim sb As New StringBuilder()
+        sb.AppendLine(temp.clrColor.ToString())
+        sb.AppendLine(temp.clrAfterGlow.ToString())
+        sb.AppendLine(temp.nIntensity.ToString())
+        sb.AppendLine(temp.clrAfterGlowBalance.ToString())
+        sb.AppendLine(temp.clrBlurBalance.ToString())
+        sb.AppendLine(temp.clrGlassReflectionIntensity.ToString())
+        sb.AppendLine(temp.fOpaque.ToString())
+        MessageBox.Show(sb.ToString())
+    End Sub
+
+
+
     <DllImport("user32.dll", SetLastError:=True, CharSet:=CharSet.Unicode)>
     Public Function SetWindowPos(hWnd As IntPtr, hWndInsertAfter As IntPtr, X As Integer, Y As Integer, cx As Integer, cy As Integer,
     uFlags As UInteger) As Boolean
