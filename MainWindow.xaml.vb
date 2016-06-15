@@ -155,22 +155,53 @@ Class MainWindow
                     DispatcherPriority.Loaded,
                     New Action(
                     Sub()
-
+                        tx1.Inlines.Clear()
 
                         Dim phav As Int64 = PerformanceInfo.GetPhysicalAvailableMemoryInMiB()
                         Dim tot As Int64 = PerformanceInfo.GetTotalMemoryInMiB()
                         Dim percentFree As Decimal = (CDec(phav) / CDec(tot)) * 100
                         Dim percentOccupied As Decimal = 100 - percentFree
+                        Dim cpuUsage As Decimal = PerformanceInfo.getCPUUsage()
 
-                        tx1.Text = "CPU " + PerformanceInfo.getCPUUsage().ToString + "%" + " • MEM " +
-                        Int(tot * (percentOccupied / 100)).ToString +
-                        "MB/" + CDec(tot).ToString + "MB " +
-                        "(" + Int(percentOccupied).ToString + "%)"
+                        tx1.Inlines.Add(New Run("CPU"))
+
+                        Dim CPUColoredText As Run = New Run(" " + cpuUsage.ToString + "%")
+
+                        CPUColoredText.Foreground = ColorPercent(100 - Int(cpuUsage))
+
+                        tx1.Inlines.Add(New Bold(CPUColoredText))
+
+                        tx1.Inlines.Add((New Run(" • MEM ")))
+
+
+                        Dim MemoryColoredText As Run = New Run(Int(tot * (percentOccupied / 100)).ToString)
+                        MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
+                        tx1.Inlines.Add(New Bold(MemoryColoredText))
+
+                        'tx1.Inlines.Add(New Bold(New Run("MB/" + CDec(tot).ToString + "MB ")))
+
+                        tx1.Inlines.Add(New Bold(New Run(" MB/")))
+
+                        Dim MemoryColoredText2 As Run = New Run(CDec(tot).ToString)
+                        MemoryColoredText2.Foreground = ColorPercent(100)
+                        tx1.Inlines.Add(New Bold(MemoryColoredText2))
+
+                        tx1.Inlines.Add(New Bold(New Run(" MB ")))
+
+
+                        Dim MemoryColoredText3 As Run = New Run("(" + Int(percentOccupied).ToString + "%)")
+                        MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
+                        tx1.Inlines.Add(MemoryColoredText3)
+
                     End Sub))
             System.Threading.Thread.Sleep(750)
         Loop
 
     End Sub
+
+    Public Function ColorPercent(ByVal percent As Integer) As SolidColorBrush
+        Return New SolidColorBrush(Color.FromArgb(&HFF, levelColorArrayR(percent), levelColorArrayG(percent), 0))
+    End Function
 
     Dim Mein As New WindowInteropHelper(Me)
     Dim ugh As Long = 0
