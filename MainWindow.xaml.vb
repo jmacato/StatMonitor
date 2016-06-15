@@ -9,6 +9,7 @@ Imports System.Windows.Threading
 Class MainWindow
 
 #Region "Declarations"
+
     Public Delegate Function EnumWindowsProc(hWnd As IntPtr, lParam As IntPtr) As Boolean
 
 
@@ -16,6 +17,8 @@ Class MainWindow
     Dim H_OFFSET As UInt16 = 215
     Dim W_OFFSET As UInt16 = 600 * 2
     Dim a As System.Drawing.Rectangle = My.Computer.Screen.WorkingArea
+
+    Public Const ActiveColoring As Boolean = False
 
     Dim NetworkMonitor_Thread As New BackgroundWorker
     Dim WindowSetter As New BackgroundWorker
@@ -34,15 +37,21 @@ Class MainWindow
     Dim bytesSent(nics.Length - 1) As System.Diagnostics.PerformanceCounter
     Dim bytesReceived(nics.Length - 1) As System.Diagnostics.PerformanceCounter
 
+
+    Dim Mein As New WindowInteropHelper(Me)
+    Dim ugh As Long = 0
+
+
 #End Region
+
     Public Function SetTopMostWindow(hwnd As Long, Topmost As Boolean) _
-         As Long
+     As Long
         If Topmost = True Then 'Make the window topmost
             SetTopMostWindow = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0,
-               0, FLAGS)
+             0, FLAGS)
         Else
             SetTopMostWindow = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0,
-               0, 0, FLAGS)
+             0, 0, FLAGS)
             SetTopMostWindow = False
         End If
     End Function
@@ -124,6 +133,7 @@ Class MainWindow
             bytesSent(NICi) = New System.Diagnostics.PerformanceCounter("Network Interface", "Bytes Sent/sec", nics(NICi), True)
             bytesReceived(NICi) = New System.Diagnostics.PerformanceCounter("Network Interface", "Bytes received/sec", nics(NICi), True)
         Next
+
         NICi = 0
         WindowSetter.RunWorkerAsync()
         CPUMEMMonitor.RunWorkerAsync()
@@ -132,117 +142,98 @@ Class MainWindow
         Dim exStyle As Integer = CInt(GetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE)))
         exStyle = exStyle Or CInt(ExtendedWindowStyles.WS_EX_TOOLWINDOW)
         SetWindowLong(New WindowInteropHelper(Me).Handle, CInt(GetWindowLongFields.GWL_EXSTYLE), CLng(exStyle))
-        ugh = SetTopMostWindow(Mein.Handle, 1)
 
     End Sub
 
 
 
     Private Sub CPUMEMMonitor_DoWork(sender As Object, e As DoWorkEventArgs)
-
         Do
             Dispatcher.Invoke(
-                    DispatcherPriority.Loaded,
-                    New Action(
-                    Sub()
-                        tx1.Inlines.Clear()
+            DispatcherPriority.Loaded,
+            New Action(
+            Sub()
+                tx1.Inlines.Clear()
 
-                        Dim phav As Int64 = PerformanceInfo.GetPhysicalAvailableMemoryInMiB()
-                        Dim tot As Int64 = PerformanceInfo.GetTotalMemoryInMiB()
-                        Dim percentFree As Decimal = (CDec(phav) / CDec(tot)) * 100
-                        Dim percentOccupied As Decimal = 100 - percentFree
-                        Dim cpuUsage As Decimal = PerformanceInfo.getCPUUsage()
+                Dim phav As Int64 = PerformanceInfo.GetPhysicalAvailableMemoryInMiB()
+                Dim tot As Int64 = PerformanceInfo.GetTotalMemoryInMiB()
+                Dim percentFree As Decimal = (CDec(phav) / CDec(tot)) * 100
+                Dim percentOccupied As Decimal = 100 - percentFree
+                Dim cpuUsage As Decimal = PerformanceInfo.getCPUUsage()
+                tx1.Inlines.Add(New Run("CPU"))
+                Dim CPUColoredText As Run = New Run(" " + cpuUsage.ToString + "%")
+                CPUColoredText.Foreground = ColorPercent(100 - Int(cpuUsage))
+                tx1.Inlines.Add(New Bold(CPUColoredText))
+                tx1.Inlines.Add((New Run(" • RAM ")))
 
-                        tx1.Inlines.Add(New Run("CPU"))
+                Dim MemoryColoredText As Run = New Run(Int(tot * (percentOccupied / 100)).ToString)
+                MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
+                tx1.Inlines.Add(New Bold(MemoryColoredText))
+                tx1.Inlines.Add((New Run("MB" + ChrW(8200))))
+                Dim MemoryColoredText3 As Run = New Run("(" + Int(percentOccupied).ToString + "%)")
+                MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
+                tx1.Inlines.Add(New Bold(MemoryColoredText3))
 
-                        Dim CPUColoredText As Run = New Run(" " + cpuUsage.ToString + "%")
-
-                        CPUColoredText.Foreground = ColorPercent(100 - Int(cpuUsage))
-
-                        tx1.Inlines.Add(New Bold(CPUColoredText))
-
-                        tx1.Inlines.Add((New Run(" • RAM ")))
-
-
-                        Dim MemoryColoredText As Run = New Run(Int(tot * (percentOccupied / 100)).ToString + "MB ")
-                        MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
-                        tx1.Inlines.Add(New Bold(MemoryColoredText))
-
-                        'tx1.Inlines.Add(New Bold(New Run("MB/" + CDec(tot).ToString + "MB ")))
-
-                        'tx1.Inlines.Add(New Bold(New Run("MB")))
-
-                        'Dim MemoryColoredText2 As Run = New Run(CDec(tot).ToString)
-                        'MemoryColoredText2.Foreground = ColorPercent(100)
-                        'tx1.Inlines.Add(New Bold(MemoryColoredText2))
-
-                        'tx1.Inlines.Add(New Bold(New Run(" MB ")))
-
-
-                        Dim MemoryColoredText3 As Run = New Run("(" + Int(percentOccupied).ToString + "%)")
-                        MemoryColoredText.Foreground = ColorPercent(100 - Int(percentOccupied))
-                        tx1.Inlines.Add(New Bold(MemoryColoredText3))
-
-                    End Sub))
+            End Sub))
             System.Threading.Thread.Sleep(750)
         Loop
 
     End Sub
 
     Public Function ColorPercent(ByVal percent As Integer) As SolidColorBrush
-        Return New SolidColorBrush(Color.FromArgb(&HFF, levelColorArrayR(percent), levelColorArrayG(percent), 0))
+        If ActiveColoring Then
+            Return New SolidColorBrush(Color.FromArgb(&HFF, levelColorArrayR(percent), levelColorArrayG(percent), 0))
+        Else
+            Return Brushes.White
+        End If
     End Function
-
-    Dim Mein As New WindowInteropHelper(Me)
-    Dim ugh As Long = 0
 
     Private Sub WindowSetter_DoWork(sender As Object, e As DoWorkEventArgs)
         Do
-            'Try
-
             'Get TrayNotifW sizes for reference
-
             Dim Taskbar_RECT As RECT
-                ugh = GetWindowRect(GetNotifTrayHandle(), Taskbar_RECT)
-
-            'WPF been using Device Independent Pixels, hence the clusterfuck here
-
-            '' Hide me in the Shadooows (Aldub/Alt+Tab) huehue
-
+            ugh = GetWindowRect(GetNotifTrayHandle(), Taskbar_RECT)
 
             Dim Left_Offset = (Taskbar_RECT.Right - Taskbar_RECT.Left)
-                Me.Height = PixelsToPoints(Taskbar_RECT.Bottom - Taskbar_RECT.Top, Axis.Vertical)
-                Me.Left = PixelsToPoints(Taskbar_RECT.Right - PointsToPixels(Me.Width, Axis.Horizontal) - Left_Offset, Axis.Horizontal)
-                Me.Top = PixelsToPoints(Taskbar_RECT.Top, Axis.Vertical)
+            Dim AvailWinds As IEnumerable(Of IntPtr) = FindWindows()
+            Dim windowName As New List(Of String)()
+            Dim strbuild As New StringBuilder()
+            Dim fll As Integer = 0
+            Dim asdsad As Boolean
 
-                RemoveFromAeroPeek(Mein.Handle)
+            Dispatcher.Invoke(DispatcherPriority.Loaded, New Action(
+             Sub()
+                 'WPF been using Device Independent Pixels, hence the clusterfuck here
 
-                '' After a night-fckin long search
-                '' I can finally hide this mofo when other apps are fullscreen >.>
+                 Me.Height = PixelsToPoints(Taskbar_RECT.Bottom - Taskbar_RECT.Top, Axis.Vertical)
+                 Me.Left = PixelsToPoints(Taskbar_RECT.Right - PointsToPixels(Me.Width, Axis.Horizontal) - Left_Offset, Axis.Horizontal)
+                 Me.Top = PixelsToPoints(Taskbar_RECT.Top, Axis.Vertical)
+                 RemoveFromAeroPeek(Mein.Handle)
+             End Sub))
 
-                Dim AvailWinds As IEnumerable(Of IntPtr) = FindWindows()
-                Dim windowName As New List(Of String)()
-                Dim strbuild As New StringBuilder()
-                Dim fll As Integer = 0
-                Dim asdsad As Boolean
+            '' After a night-fckin long search
+            '' I can finally hide this mofo when other apps are fullscreen >.>
 
-                For Each X As IntPtr In AvailWinds
-                    asdsad = CheckIfFullScreen(X)
-                    fll += Math.Abs(CInt(asdsad))
-                Next
+            For Each X As IntPtr In AvailWinds
+                asdsad = CheckIfFullScreen(X)
+                fll += Math.Abs(CInt(asdsad))
+            Next
 
-                If fll > 1 Then
-                    Me.Visibility = Visibility.Collapsed
-                Else
-                    Me.Visibility = Visibility.Visible
-                End If
-            ' Catch ex As Exception
-            ' Debug.Print(ex.ToString)
-            'End Try
-            Thread.Sleep(100)
+            Dispatcher.Invoke(
+             DispatcherPriority.Loaded,
+             New Action(
+             Sub()
+                 If fll > 1 Then
+                     Me.Visibility = Visibility.Collapsed
+                     ugh = SetTopMostWindow(Mein.Handle, 0)
 
+                 Else
+                     Me.Visibility = Visibility.Visible
+                     ugh = SetTopMostWindow(Mein.Handle, 1)
+                 End If
+             End Sub))
+            Thread.Sleep(10)
         Loop
-
     End Sub
 
     Private Function PointsToPixels(wpfPoints As Double, direction As Axis) As Double
@@ -276,12 +267,12 @@ Class MainWindow
         Do
 
             Dispatcher.Invoke(
-                    DispatcherPriority.Loaded,
-                    New Action(
-                    Sub()
-                        tx2.Text = (String.Format("▼ {0} kB/s ▲ {1} kB/s ", Math.Round(bytesReceived(NICi).NextValue / 1024, 2, MidpointRounding.ToEven),
-                                                                    Math.Round(bytesSent(NICi).NextValue / 1024, 2, MidpointRounding.ToEven)))
-                    End Sub))
+            DispatcherPriority.Loaded,
+            New Action(
+            Sub()
+                tx2.Text = (String.Format("▼ {0} kB/s ▲ {1} kB/s ", Math.Round(bytesReceived(NICi).NextValue / 1024, 2, MidpointRounding.ToEven),
+    Math.Round(bytesSent(NICi).NextValue / 1024, 2, MidpointRounding.ToEven)))
+            End Sub))
             System.Threading.Thread.Sleep(1000)
 
         Loop
